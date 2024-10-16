@@ -83,3 +83,21 @@ export async function getVODTimestamp(broadcasterID: string = "248474026") {
 		throw error; // Re-throw the error to handle it in the calling function if needed
 	}
 }
+
+export async function checkUserExists(name: string) {
+	try {
+		const response = await axios.get(
+			`https://api.twitch.tv/helix/users?login=${name}`,
+			{
+				headers: {
+					"Client-Id": clientId,
+					Authorization: `Bearer ${token}`,
+				},
+			}
+		);
+
+		return true;
+	} catch (error) {
+		return false;
+	}
+}

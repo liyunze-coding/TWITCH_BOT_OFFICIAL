@@ -2,12 +2,28 @@
 export type textFilename = "compliments" | "quotes" | "timer_messages";
 export type jsonFilename = "commands" | "broadcaster_commands";
 
+const SHOUTOUT_PATH = Bun.env.SHOUTOUT_PATH ?? "";
+
 export async function getTextFileContent(
 	filename: textFilename
 ): Promise<string[]> {
 	return (await Bun.file(`./txt_files/${filename}.txt`).text())
 		.replaceAll("\r", "")
 		.split("\n");
+}
+
+export async function getShoutouts() {
+	return (await Bun.file(SHOUTOUT_PATH).text())
+		.replaceAll("\r", "")
+		.split(" ");
+}
+
+export async function addToShoutout(streamer: string) {
+	let shoutouts = await getShoutouts();
+
+	shoutouts.push(streamer);
+
+	await Bun.write(SHOUTOUT_PATH, shoutouts.join(" "));
 }
 
 // commands (json files)

@@ -37,7 +37,7 @@ client.on("Twitch.Sub", async (data) => {
 		timestampedURL,
 		username,
 		profileURL,
-		`${username} has subscribed!`
+		`**${username}** has subscribed!`
 	);
 });
 
@@ -55,7 +55,7 @@ client.on("Twitch.ReSub", async (data) => {
 		timestampedURL,
 		username,
 		profileURL,
-		`${username} has subscribed for ${months} months!`
+		`**${username}** has subscribed for **${months} months**!`
 	);
 });
 
@@ -73,7 +73,7 @@ client.on("Twitch.GiftSub", async (data) => {
 		timestampedURL,
 		username,
 		profileURL,
-		`${username} has gifted a sub to ${recipient}!`
+		`**${username}** has gifted a sub to **${recipient}**!`
 	);
 });
 
@@ -86,14 +86,14 @@ client.on("Twitch.GiftBomb", async (data: any) => {
 	let profileURL = await getProfileURL(data.data.userId);
 
 	await textToSpeechPrivate(
-		`${username} has gifted ${giftCount} subs to the community`
+		`**${username}** has gifted **${giftCount} subs** to the community`
 	);
 
 	await sendEmbedWebHookToDiscord(
 		timestampedURL,
 		username,
 		profileURL,
-		`${username} has gifted ${giftCount} subs to the community!`
+		`**${username}** has gifted **${giftCount} subs** to the community!`
 	);
 });
 
@@ -111,7 +111,7 @@ client.on("Twitch.Raid", async (data) => {
 		timestampedURL,
 		raidingStreamer,
 		profileURL,
-		`${raidingStreamer} has raided with ${viewerCount} viewers!`
+		`**${raidingStreamer}** has raided with **${viewerCount} viewers**!`
 	);
 });
 
@@ -145,7 +145,9 @@ client.on("Twitch.RewardRedemption", async (data) => {
 			timestampedURL,
 			username,
 			profileURL,
-			`**${username}** redeemed **${reward.title}** for ${reward.cost}\n${
+			`**${username}** redeemed **${reward.title}** for ${
+				reward.cost
+			} points!\n${
 				userInput
 					? `\`\`\`\n${userInput}\n\`\`\`
 					`

@@ -29,6 +29,6 @@ export async function textToSpeechPrivate(message: string) {
 
 export async function textToSpeechPublic(message: string) {
 	client.doAction("140817ef-16c6-4c63-a269-492d382597b9", {
-		text: message,
+		messageStripped: message,
 	});
 }

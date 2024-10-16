@@ -6,11 +6,12 @@ import {
 	addCommand,
 	removeCommand,
 	editCommand,
+	addToShoutout,
 } from "./Commands";
 
 import { lookUpDefinition } from "./Define";
 import { sendEmbedWebHook, sendMessageWebHook } from "./DiscordWebHook";
-import { getVODTimestamp } from "./TwitchAPI";
+import { getVODTimestamp, checkUserExists } from "./TwitchAPI";
 import type { jsonFilename, textFilename } from "./Commands";
 
 const PROMOTION_WH_URL = Bun.env.PROMOTION_WH_URL ?? "";
@@ -219,6 +220,12 @@ export async function processCommand(
 			PRIVATE_WH_URL,
 			`${timestamp}\n${description}`
 		);
+	} else if (command === "so") {
+		let user = message.startsWith("@") ? message.slice(1) : message;
+
+		if (await checkUserExists(user)) {
+			await addToShoutout(user);
+		}
 	}
 
 	/*else if (["convert"].includes(command)) {
