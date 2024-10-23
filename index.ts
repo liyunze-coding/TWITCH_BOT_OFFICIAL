@@ -159,6 +159,12 @@ client.on("Twitch.RewardRedemption", async (data) => {
 	}
 });
 
+client.on("Twitch.Cheer", async (data) => {
+	data.data.bits;
+	data.data.username;
+	data.data.displayName;
+});
+
 client.on("Twitch.ChatMessage", async (data) => {
 	const payload = data.data;
 	const source = data.event.source.toLowerCase();

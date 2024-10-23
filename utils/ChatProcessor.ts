@@ -34,6 +34,8 @@ export async function processCommand(
 	source: string,
 	msgId?: string | null
 ) {
+	command = command.toLowerCase();
+
 	let broadcasterCommands = await getCommands("broadcaster_commands");
 
 	let hasModPerms = flags.mod || flags.broadcaster;

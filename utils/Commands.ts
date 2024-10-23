@@ -61,6 +61,8 @@ export async function addCommand(
 	commandName: string,
 	commandOutput: string
 ): Promise<boolean> {
+	commandName = commandName.toLowerCase();
+
 	let commandsJson = await getCommands(filename);
 
 	if (commandsJson[commandName]) {
@@ -78,6 +80,8 @@ export async function removeCommand(
 	filename: jsonFilename,
 	commandName: string
 ): Promise<boolean> {
+	commandName = commandName.toLowerCase();
+
 	let commandsJson = await getCommands(filename);
 
 	if (!commandsJson[commandName]) {
@@ -96,6 +100,7 @@ export async function editCommand(
 	commandName: string,
 	commandOutput: string
 ): Promise<boolean> {
+	commandName = commandName.toLowerCase();
 	let commandsJson = await getCommands(filename);
 
 	if (!commandsJson[commandName]) {
