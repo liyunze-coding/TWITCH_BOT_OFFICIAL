@@ -6,13 +6,25 @@ import {
 	addCommand,
 	removeCommand,
 	editCommand,
-	addToShoutout,
+	getScores,
+	addScore,
+	saveScore,
 } from "./Commands";
-
+import { addToShoutout, processAutoShoutout } from "./AutoShoutout";
 import { lookUpDefinition } from "./Define";
 import { sendEmbedWebHook, sendMessageWebHook } from "./DiscordWebHook";
 import { getVODTimestamp, checkUserExists } from "./TwitchAPI";
+import { convert } from "./Convert";
 import type { jsonFilename, textFilename } from "./Commands";
+const BOTS = [
+	"ryandotts",
+	"rythondev",
+	"mohcitrus",
+	"sery_bot",
+	"kofistreambot",
+	"streamelements",
+	"songlistbot",
+];
 
 const PROMOTION_WH_URL = Bun.env.PROMOTION_WH_URL ?? "";
 const PRIVATE_WH_URL = Bun.env.PRIVATE_WH_URL ?? "";
@@ -24,7 +36,7 @@ const commandModify: string[] = ["command", "cmd", "rcmd"];
 let messageCount: number = 0;
 let lastMessageTimestamp: number = Date.now();
 const CHAT_MESSAGE_COUNT = 5;
-const TIME_SINCE_LAST_MESSAGE = 5 * 60 * 1000;
+const TIME_SINCE_LAST_MESSAGE = 5 * 60 * 1000; // 5 minutes
 
 export async function processCommand(
 	user: string,
@@ -58,8 +70,6 @@ export async function processCommand(
 	}
 
 	let commands = await getCommands("commands");
-
-	// TODO: Modify shoutout command
 
 	if (commands[command]) {
 		let reply = commands[command];
@@ -228,9 +238,7 @@ export async function processCommand(
 		if (await checkUserExists(user)) {
 			await addToShoutout(user);
 		}
-	}
-
-	/*else if (["convert"].includes(command)) {
+	} else if (["convert"].includes(command)) {
 		let response = "";
 		if (message.includes("->")) {
 			let breakdownMessage = message.split("->");
@@ -238,32 +246,34 @@ export async function processCommand(
 			let fromMeasurement = breakdownMessage[0];
 
 			response = convert(fromMeasurement, toUnit);
-		} else {
-			// TODO: AUTOMATIC CONVERSION
 		}
 
 		await sendChatResponse(response, source, msgId);
-	}*/
+	}
 }
 
 export async function processChat(
 	user: string,
 	source: string,
+	message: string,
 	msgId?: string | null
 ) {
-	if (
-		[
-			"ryandotts",
-			"rythondev",
-			"mohcitrus",
-			"sery_bot",
-			"kofistreambot",
-		].includes(user.toLowerCase()) ||
-		source === "youtube"
-	) {
+	// port from YouTube chat to Twitch chat so I notice them
+	if (source === "youtube" && !BOTS.includes(user)) {
+		sendChatResponse(`${user}: ${message}`, "twitch");
+	}
+
+	// ignore if it's from YouTube or is a bot
+	if (BOTS.includes(user.toLowerCase()) || source === "youtube") {
 		return;
 	}
 
+	// Auto shoutout only available in twitch chat
+	if (source === "twitch") {
+		await processAutoShoutout(user);
+	}
+
+	// Process Timer messages
 	if (
 		messageCount >= CHAT_MESSAGE_COUNT &&
 		Date.now() - lastMessageTimestamp >= TIME_SINCE_LAST_MESSAGE
@@ -293,26 +303,81 @@ export async function processChat(
 	}
 }
 
-async function sendChatResponse(
+function todayDate() {
+	const todayTimestamp = new Date();
+	const todayDate = todayTimestamp.toLocaleDateString("en-CA");
+
+	return todayDate;
+}
+
+export async function processCheckIn(username: string) {
+	let scores = await getScores("checkIn");
+
+	const today = todayDate();
+
+	if (BOTS.includes(username.toLowerCase())) {
+		return;
+	}
+
+	if (!scores["_today"] || scores["_today"].date != today) {
+		scores["_today"] = {
+			date: today,
+			first: null,
+			checkedIn: [],
+		};
+	}
+
+	if (scores["_today"].checkedIn.includes(username)) {
+		return;
+	}
+
+	if (!scores["_today"].first) {
+		scores["_today"].first = username;
+		scores = addScore(scores, username, "first", 1);
+		scores = addScore(scores, username, "checkedIn", 1);
+
+		let userScore = scores[username].first;
+
+		await sendChatResponse(
+			`Congrats ${username} on being FIRST! You have been first ${userScore} time(s)`,
+			"twitch"
+		);
+	} else {
+		scores = addScore(scores, username, "checkedIn", 1);
+
+		let userScore = scores[username].checkedIn;
+
+		await sendChatResponse(
+			`Thanks for checking in, ${username}! You have checked in ${userScore} time(s)`,
+			"twitch"
+		);
+	}
+
+	scores["_today"].checkedIn.push(username);
+
+	await saveScore("checkIn", scores);
+}
+
+export async function sendChatResponse(
 	response: string,
 	source: string,
 	msgId?: string | null
 ) {
-	if (source === "youtube") {
+	if (source.toLowerCase() === "youtube") {
 		// const streamerYTBotResponse =
 		await client.doAction("390ff8f2-7945-4eba-be2a-a1c0e4ba535d", {
 			response: response,
 		});
 
 		// console.log(streamerYTBotResponse);
-	} else if (source === "twitch" && !msgId) {
+	} else if (source.toLowerCase() === "twitch" && !msgId) {
 		// const streamerTwitchBotResponse =
 		await client.doAction("8ff809be-e269-4f06-9528-021ef58df436", {
 			response: response,
 		});
 
 		// console.log(streamerTwitchBotResponse);
-	} else if (source === "twitch") {
+	} else if (source.toLowerCase() === "twitch") {
 		await client.doAction("22617c2d-0ba2-4c19-9703-1b6fa62e3a4d", {
 			response: response,
 			msgId: msgId,

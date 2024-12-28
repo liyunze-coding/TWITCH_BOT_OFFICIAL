@@ -1,5 +1,5 @@
 {
-	"lurk": "Thanks for lurking, {user}!",
+	"lurk": "sounds good, {user}",
 	"unlurk": "Welcome back {user}!",
 	"github": "{user} https://github.com/liyunze-coding",
 	"website": "{user} Check out Ryan's website here: https://rython.dev/",
@@ -33,7 +33,7 @@
 	"chat-task-tic": "Chat-Task-Tic widget is a free and open source task widget developed by @RythonDev ! https://github.com/liyunze-coding/chat-task-tic-overlay-infinity",
 	"taskwidget": "https://github.com/liyunze-coding/chat-task-tic-overlay-infinity",
 	"muted": "Ryan will be muted during work time, check back during break time! (There's a Discord ping for it ^^)",
-	"lazy": "Go support her at https://youtube.com/@studyyoulazy/live",
+	"lazy": "Go support studyyoulazy at https://youtube.com/@studyyoulazy/live",
 	"gameofpi": "Currently making a game that uses sequence memory to help you remember the digits of Pi in order",
 	"rules": "📝 The chat rules 1. Be kind and respectful 2. No spam or self promo 3. No slurs, no hatred of any form 4. Check the rules in the Rules panel in the About section for full list",
 	"socials": "Check out Ryan's socials here! https://rython.dev/socials",
@@ -44,9 +44,13 @@
 	"blur": "Ryan's screen can be seen on the bottom left of the stream. It's blurred and minimized as it may contain copyrighted university materials. The purpose is to keep ryan from scrolling social media such as reddit or youtube",
 	"ads": "We are currently experiencing a 1.5 minute ad break! Take this time to hydrate, take a toilet break, do some stretches, or install the !admuter browser extension!",
 	"tts": "Redeem TTS reward with channel points! Anything inappropriate will result in an immediate ban. If I use your TTS reward to be featured in a YT short or tiktok, you get refunded.",
-	"today": "Integrating Spotify API to my Twitch bot for the commands !song and !playlist",
+	"today": "Attempting to make a beginner friendly Twitch Bot template in Python",
 	"bluesky": "Follow me on Bluesky! https://bsky.app/profile/rython.dev",
 	"subs": "If you want to subscribe on mobile, click on this link instead, to avoid paying fees to Google Play Store / App Store https://twitch.tv/subs/rythondev",
 	"twitchbot": "Check out my Twitch bot here https://github.com/liyunze-coding/ryandotts-twitch-bot",
-	"widgets": "FREE window widgets for stream! https://ko-fi.com/s/86fdb607a6"
+	"widgets": "FREE window widgets for stream! https://ko-fi.com/s/86fdb607a6",
+	"raidtrain": "The Coworking & Coding Club is doing a raid train this week ( https://raidtra.in/events/32 ) This channel is raiding twitch.tv/Laurasourus at 6pm AEDT. Thanks for being here and your support is heavily appreciated ^^",
+	"raidtrainmsg": "🚂💨 There's a Raid Train pulling into the station! 💻🖱️🗂️ The CoCo Club is here, let's be productive together! ✂️ 📝 📌",
+	"schedule": "you can find my schedule on my socials page: https://rython.dev/socials",
+	"aoc": "Advent of Code is an annual set of Christmas-themed computer programming challenges that follow an Advent calendar. My solutions can be found here: https://github.com/liyunze-coding/AdventOfCode_2024"
 }

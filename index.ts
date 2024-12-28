@@ -1,10 +1,67 @@
 import { client } from "./utils/SBClient";
 import { textToSpeechPrivate, textToSpeechPublic } from "./utils/TextToSpeech";
-import { processChat, processCommand } from "./utils/ChatProcessor";
+import {
+	processChat,
+	processCommand,
+	processCheckIn,
+	sendChatResponse,
+} from "./utils/ChatProcessor";
 import { sendEmbedWebHook } from "./utils/DiscordWebHook";
 import { getProfileURL, getVODTimestamp } from "./utils/TwitchAPI";
 
+type Webhook = {
+	timestampedURL: string;
+	username: string;
+	profileURL: string;
+	description: string;
+};
+
+let webhookQueue: Webhook[] = [];
+let webhookOccupied = false;
+
+let textToSpeechOccupied = false;
+let privateTTSQueue: string[] = [];
+let publicTTSQueue: string[] = [];
+
 const CHANNEL_REWARD_WH_URL = Bun.env.CHANNEL_REWARD_WH_URL ?? "";
+
+async function queueingPrivateTTS(message: string) {
+	if (textToSpeechOccupied) {
+		privateTTSQueue.push(message);
+	}
+
+	textToSpeechOccupied = true;
+	await textToSpeechPrivate(message);
+	textToSpeechOccupied = false;
+
+	if (privateTTSQueue.length > 0) {
+		let TTS_msg = privateTTSQueue.shift() ?? "";
+
+		if (!TTS_msg) {
+			return;
+		}
+
+		await queueingPrivateTTS(TTS_msg);
+	}
+}
+
+async function queueingPublicTTS(message: string) {
+	publicTTSQueue.push(message);
+}
+
+async function playPublicTTSQueue() {
+	if (publicTTSQueue.length > 0) {
+		let TTS_msg = publicTTSQueue.shift() ?? "";
+
+		if (!TTS_msg) {
+			return;
+		}
+
+		await textToSpeechPublic(TTS_msg);
+	} else {
+		await textToSpeechPrivate("No TTS in Queue");
+	}
+}
 
 async function sendEmbedWebHookToDiscord(
 	timestampedURL: string,
@@ -12,18 +69,46 @@ async function sendEmbedWebHookToDiscord(
 	profileURL: string,
 	description: string
 ) {
+	if (webhookOccupied) {
+		webhookQueue.push({
+			timestampedURL,
+			username,
+			profileURL,
+			description,
+		});
+	}
+
+	webhookOccupied = true;
 	await sendEmbedWebHook(CHANNEL_REWARD_WH_URL, {
 		description: description,
 		message: timestampedURL,
 		author: username,
 		author_url: profileURL,
 	});
+	webhookOccupied = false;
+
+	if (webhookQueue.length > 0) {
+		const { timestampedURL, username, profileURL, description } =
+			webhookQueue.shift() ?? {};
+
+		if (!timestampedURL || !username || !profileURL || !description) {
+			return;
+		}
+
+		await sendEmbedWebHookToDiscord(
+			timestampedURL,
+			username,
+			profileURL,
+			description
+		);
+	}
 }
 
 client.on("Twitch.Follow", async (data) => {
 	let username = data.data.user_name;
 
-	await textToSpeechPrivate(`${username} has followed`);
+	await queueingPrivateTTS(`${username} has followed`);
+	await sendChatResponse("Thanks for the follow!", "twitch");
 });
 
 client.on("Twitch.Sub", async (data) => {
@@ -31,7 +116,9 @@ client.on("Twitch.Sub", async (data) => {
 	let timestampedURL = await getVODTimestamp();
 	let profileURL = await getProfileURL(data.data.userId);
 
-	await textToSpeechPrivate(`${username} has subscribed`);
+	await processCheckIn(username);
+
+	await queueingPrivateTTS(`${username} has subscribed`);
 
 	await sendEmbedWebHookToDiscord(
 		timestampedURL,
@@ -47,9 +134,11 @@ client.on("Twitch.ReSub", async (data) => {
 	let timestampedURL = await getVODTimestamp();
 	let profileURL = await getProfileURL(data.data.userId);
 
-	await textToSpeechPrivate(
-		`${username} has subscribed for ${months} months`
-	);
+	await processCheckIn(username);
+
+	textToSpeechOccupied = true;
+	await queueingPrivateTTS(`${username} has subscribed for ${months} months`);
+	textToSpeechOccupied = false;
 
 	await sendEmbedWebHookToDiscord(
 		timestampedURL,
@@ -67,7 +156,9 @@ client.on("Twitch.GiftSub", async (data) => {
 	let timestampedURL = await getVODTimestamp();
 	let profileURL = await getProfileURL(data.data.userId);
 
-	await textToSpeechPrivate(`${username} has gifted a sub to ${recipient}`);
+	await processCheckIn(username);
+
+	await queueingPrivateTTS(`${username} has gifted a sub to ${recipient}`);
 
 	await sendEmbedWebHookToDiscord(
 		timestampedURL,
@@ -85,7 +176,7 @@ client.on("Twitch.GiftBomb", async (data: any) => {
 	let timestampedURL = await getVODTimestamp();
 	let profileURL = await getProfileURL(data.data.userId);
 
-	await textToSpeechPrivate(
+	await queueingPrivateTTS(
 		`**${username}** has gifted **${giftCount} subs** to the community`
 	);
 
@@ -103,7 +194,7 @@ client.on("Twitch.Raid", async (data) => {
 	let timestampedURL = await getVODTimestamp();
 	let profileURL = await getProfileURL(data.data.from_broadcaster_user_id);
 
-	await textToSpeechPrivate(
+	await queueingPrivateTTS(
 		`${raidingStreamer} has raided with ${viewerCount} viewers`
 	);
 
@@ -123,17 +214,21 @@ client.on("Twitch.RewardRedemption", async (data) => {
 		let userInput = data.data.user_input ?? "";
 
 		let response = `${username} redeemed ${reward.title}`;
-
 		if (userInput) {
 			response += ` with message: ${userInput}`;
+		}
+
+		if (reward.id == "a3114976-9596-4821-b7a7-3b3b4209f94e") {
+			await processCheckIn(username);
 		}
 
 		// Check if it's the other TTS reward
 		if (reward.id !== "dc57e7d7-738e-4396-a945-e4769006e4ae") {
 			// Send TTS message to broadcaster only
-			await textToSpeechPrivate(response);
+			await queueingPrivateTTS(response);
 		} else {
-			await textToSpeechPublic(`New TTS from ${username}. ${userInput}`);
+			// Send TTS via Speaker Bot
+			await queueingPublicTTS(`${username} says. ${userInput}`);
 		}
 
 		// Send message to Discord with VOD Timestamp
@@ -160,9 +255,11 @@ client.on("Twitch.RewardRedemption", async (data) => {
 });
 
 client.on("Twitch.Cheer", async (data) => {
-	data.data.bits;
-	data.data.username;
+	let bits = data.data.bits;
+	let username = data.data.username;
 	data.data.displayName;
+
+	await processCheckIn(username);
 });
 
 client.on("Twitch.ChatMessage", async (data) => {
@@ -171,9 +268,12 @@ client.on("Twitch.ChatMessage", async (data) => {
 	const user = payload.message.displayName;
 	const msgId = payload.message.msgId;
 
+	await processCheckIn(user);
+
 	// check if message starts with prefix
 	if (!payload.message.message.startsWith("!")) {
-		await processChat(user, source, msgId);
+		const chatMessage = payload.message.message;
+		await processChat(user, source, chatMessage, msgId);
 		return;
 	}
 
@@ -208,7 +308,8 @@ client.on("YouTube.Message", async (data) => {
 
 	// check if message starts with prefix
 	if (!payload.message.startsWith("!")) {
-		await processChat(user, source);
+		const chatMessage = payload.message;
+		await processChat(user, source, chatMessage);
 		return;
 	}
 
@@ -224,4 +325,10 @@ client.on("YouTube.Message", async (data) => {
 	};
 
 	await processCommand(user, command, message, flags, source);
+});
+
+client.on("General.Custom", async (data: any) => {
+	if (data && data.data.custom && data.data.custom == "playTTS") {
+		await playPublicTTSQueue();
+	}
 });
