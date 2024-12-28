@@ -9,6 +9,7 @@
 		"typescript": "^5.0.0"
 	},
 	"dependencies": {
+		"@atproto/api": "^0.13.23",
 		"@streamerbot/client": "^1.5.2",
 		"@twurple/api": "^7.1.0",
 		"@twurple/auth": "^7.1.0",

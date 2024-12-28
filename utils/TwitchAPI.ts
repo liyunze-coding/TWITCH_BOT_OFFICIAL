@@ -21,7 +21,7 @@ async function getAppAccessToken() {
 		return token;
 	} catch (error: any) {
 		console.error(
-			"Error fetching token: ",
+			"Error fetching Twitch API token (check .env): ",
 			error.response ? error.response.data : error.message
 		);
 	}

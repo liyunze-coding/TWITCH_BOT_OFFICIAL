@@ -16,6 +16,8 @@ import { sendEmbedWebHook, sendMessageWebHook } from "./DiscordWebHook";
 import { getVODTimestamp, checkUserExists } from "./TwitchAPI";
 import { convert } from "./Convert";
 import type { jsonFilename, textFilename } from "./Commands";
+import { postToBsky } from "./Bsky";
+
 const BOTS = [
 	"ryandotts",
 	"rythondev",
@@ -232,11 +234,23 @@ export async function processCommand(
 			PRIVATE_WH_URL,
 			`${timestamp}\n${description}`
 		);
-	} else if (command === "so") {
+	} else if (command === "so" && hasModPerms) {
 		let user = message.startsWith("@") ? message.slice(1) : message;
 
 		if (await checkUserExists(user)) {
 			await addToShoutout(user);
+		}
+	} else if (
+		["bluesky", "bsky"].includes(command) &&
+		user.toLowerCase() === "rythondev"
+	) {
+		let postID = await postToBsky(message);
+
+		if (postID) {
+			await sendChatResponse(
+				`New Bluesky tweet made https://bsky.app/profile/rython.dev/post/${postID}`,
+				source
+			);
 		}
 	} else if (["convert"].includes(command)) {
 		let response = "";
