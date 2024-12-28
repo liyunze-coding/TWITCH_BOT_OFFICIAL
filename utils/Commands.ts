@@ -15,20 +15,6 @@ export async function getTextFileContent(
 		.split("\n");
 }
 
-// export async function getShoutouts() {
-// 	return (await Bun.file(SHOUTOUT_PATH).text())
-// 		.replaceAll("\r", "")
-// 		.split(" ");
-// }
-
-// export async function addToShoutout(streamer: string) {
-// 	let shoutouts = await getShoutouts();
-
-// 	shoutouts.push(streamer);
-
-// 	await Bun.write(SHOUTOUT_PATH, shoutouts.join(" "));
-// }
-
 // commands (json files)
 export async function getCommands(filename: jsonFilename) {
 	return await Bun.file(`./json_files/${filename}.json`).json();
